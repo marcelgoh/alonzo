@@ -33,5 +33,5 @@ _build/
 *.gz
 *.sty
 
-# Test output
-test/*.txt
+# Cabal output
+dist
