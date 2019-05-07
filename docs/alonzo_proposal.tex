@@ -1,0 +1,36 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref, listings}
+\usepackage{tipa}
+\usepackage[shortlabels]{enumitem}
+\setlist{  
+  listparindent=\parindent,
+  parsep=0pt,
+}
+
+\lstset{
+    basicstyle=\ttfamily
+}
+
+\begin{document}
+ 
+\title{\textbf{NPRG005 Project Proposal: Alonzo}}
+\author{Marcel Goh}
+\maketitle
+
+Alonzo is an interactive interpreter that performs normal-order $\beta$-reduction on expressions in the $\lambda$-calculus. Users will be able to interact with Alonzo via a read-eval-print loop where names can be assigned to $\lambda$-terms. The end result will look something like this:
+
+\begin{lstlisting}
+    ]=> TRUE := \p.\q.p
+    TRUE := \p.\q.p
+    ]=> FALSE := \p.\q.q
+    FALSE := \p.\q.q
+    ]=> AND := \p.\q.p q p
+    AND := \p.\q.p q p
+    ]=> AND TRUE FALSE
+    \p.\q.q (FALSE)
+\end{lstlisting}
+
+Alonzo always stores terms it knows in $\beta$-normal form. After evaluating a term, it checks to see if it has seen the term before. This is how it knows in the above example that \texttt{AND TRUE FALSE} evaluates to \texttt{FALSE}.
+
+\end{document}
