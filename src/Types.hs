@@ -1,3 +1,5 @@
+-- Types used in the program
+
 module Types where
 
 data Token =
@@ -6,4 +8,8 @@ data Token =
 
 data Term =
   Var Char | Abs Char Term | Ap Term Term
+  deriving (Show, Eq)
+
+data Stmt =
+  AssigStmt String Term | TermStmt Term | NameStmt String
   deriving (Show, Eq)
