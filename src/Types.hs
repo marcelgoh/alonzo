@@ -56,6 +56,14 @@ instance Eq Term where
                   Nothing -> Nothing
               _ -> Nothing  -- structures don't even match so fail
 
+-- (pretty much arbitrary) ordering for Term type
+instance Ord Term where
+  compare (Ap _ _) (Ap _ _) = EQ
+  compare (Var c1) (Var c2) = compare c1 c2
+  compare (Abs c1 _) (Abs c2 _) = compare c1 c2
+  compare (Ap _ _) _ = LT
+  compare (Abs _ _) _ = GT
+
 data Stmt =
   AssigStmt String Term | TermStmt Term | NameStmt String
   deriving (Show, Eq)
