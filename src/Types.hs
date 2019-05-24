@@ -38,15 +38,17 @@ instance Eq Term where
                   (_, _) ->
                     Nothing  -- one bound, one free, so fail
               (Abs c1 t1', Abs c2 t2') ->
-                case (Map.lookup c1 map1, Map.lookup c2 map2) of
-                  (Just i1, Just i2) ->
-                    -- both variables already bound, if binding equal then recurse
-                    if i1 == i2 then walk map1 map2 n t1' t2' else Nothing
-                  (Nothing, Nothing) ->
-                    -- bind both variables and recurse
+--                case (Map.lookup c1 map1, Map.lookup c2 map2) of
+--                  (Just i1, Just i2) ->
+--                    -- both variables already bound, if binding equal then recurse
+--                    -- if i1 == i2 then walk map1 map2 n t1' t2' else Nothing
+--                    -- ^ above step probably wrong, we want to shadow instead
                     walk (Map.insert c1 n map1) (Map.insert c2 n map2) (n + 1) t1' t2'
-                  (_, _) ->
-                    Nothing  -- one bound, one free, so fail
+--                  (Nothing, Nothing) ->
+--                    -- bind both variables and recurse
+--                    walk (Map.insert c1 n map1) (Map.insert c2 n map2) (n + 1) t1' t2'
+--                  (_, _) ->
+--                    Nothing  -- one bound, one free, so fail
               (Ap t11 t12, Ap t21 t22) ->
                 -- recurse down first term, and use updated maps and n-value to
                 --   recurse down second term
