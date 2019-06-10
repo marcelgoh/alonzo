@@ -10,11 +10,12 @@ data Token =
 
 data Term =
   Var Char | Abs Char Term | Ap Term Term
+  deriving Show
 
-instance Show Term where
-  show (Var x) = [x]
-  show (Abs x t) = ('\x3BB' : x : '.' : (show t))
-  show (Ap t1 t2) = ((show t1) ++ " " ++ (show t2))
+--instance Show Term where
+--  show (Var x) = [x]
+--  show (Abs x t) = "(" ++ ('\x3BB' : x : '.' : (show t)) ++")"
+--  show (Ap t1 t2) = "(" ++ (show t1) ++ " " ++ (show t2) ++ ")"
 
 instance Eq Term where
   t1 == t2 = alphaEquiv t1 t2
@@ -69,7 +70,7 @@ getFresh t1 t2 =
       getChar [] = error "Exhausted all variables"
       getChar (x : xs) =
         if x `elem` free1 || x `elem` free2 then getChar xs else x
-  in getChar "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  in getChar "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01233456789"
 
 -- true if the variable x is free in term t
 isFreeIn :: Char -> Term -> Bool
@@ -100,7 +101,10 @@ reduce1 :: Term -> Maybe Term
 reduce1 term =
   case term of
     (Var x) -> Nothing
-    (Abs y p) -> reduce1 p
+    (Abs y p) ->
+      case reduce1 p of
+        Just p' -> Just (Abs y p')
+        Nothing -> Nothing
     (Ap (Abs x m) n) -> Just (subst m x n)
     (Ap t1 t2) ->
       case reduce1 t1 of

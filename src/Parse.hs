@@ -4,11 +4,12 @@ module Parse where
 
 import qualified Data.Char as C
 
+import AssocList
 import Types
 
 -- given token list, output Term if syntactically valid, Nothing otherwise
-parseTerm :: [Token] -> Maybe Term
-parseTerm tokList =
+parseTerm :: [(String, Term)] -> [Token] -> Maybe Term
+parseTerm assocList tokList =
   case shunt [] [] tokList of
     Nothing -> Nothing
     Just shunted ->
@@ -25,6 +26,7 @@ parseTerm tokList =
       case t of
         Lambda c  -> shunt opStack (Lambda c : outStack) ts
         CharTok c -> shunt opStack (CharTok c : outStack) ts
+        Name s    -> shunt opStack (Name s : outStack) ts   -- treat name as atom
         Dot       -> case opStack of
                        -- application has higher precedence than abstraction
                        (Space : ops) -> shunt ops (Space : outStack) (t : ts)
@@ -57,17 +59,22 @@ parseTerm tokList =
                       _                   -> Nothing
                 _ -> Nothing
             CharTok c -> Just (Var c, ts)
+            Name s ->
+              case searchKeys assocList s of
+                Just term -> Just (term, ts)
+                Nothing -> Nothing
             _ -> Nothing
 
 -- parse one line of tokens into a statement
-parseStmt :: [Token] -> Maybe Stmt
-parseStmt [Name s] = Just (NameStmt s)
-parseStmt (Name s : Eq : tokens) =
-  case parseTerm tokens of
+parseStmt :: [(String, Term)] -> [Token] -> Maybe Stmt
+parseStmt aList [Name s] =
+  Just (NameStmt s)
+parseStmt aList (Name s : Eq : tokens) =
+  case parseTerm aList tokens of
     Just term -> Just (AssigStmt s term)
     Nothing -> Nothing
-parseStmt tokens =
-  case parseTerm tokens of
+parseStmt aList tokens =
+  case parseTerm aList tokens of
     Just term -> Just (TermStmt term)
     Nothing -> Nothing
 
@@ -88,10 +95,15 @@ tokenise s = trimRedundant $ iter [] s
                        (a : _, t' : _) ->
                          case (a, t') of
                            -- only leave spaces in when needed
+                           (RParen, LParen)       -> iter (Space : acc) ts
                            (CharTok _, CharTok _) -> iter (Space : acc) ts
                            (CharTok _, LParen)    -> iter (Space : acc) ts
-                           (RParen, LParen)       -> iter (Space : acc) ts
                            (RParen, CharTok _)    -> iter (Space : acc) ts
+                           (Name _, Name _)       -> iter (Space : acc) ts
+                           (Name _, LParen)       -> iter (Space : acc) ts
+                           (RParen, Name _)       -> iter (Space : acc) ts
+                           (Name _, CharTok _)    -> iter (Space : acc) ts
+                           (CharTok _, Name _)    -> iter (Space : acc) ts
                            _                      -> iter acc ts
             _     -> iter (t : acc) ts
     -- remove all leading spaces from a string
@@ -112,20 +124,25 @@ tokenise s = trimRedundant $ iter [] s
     iter acc "" = Just (reverse acc)
     iter acc (c : cs) =
       case c of
-        '\\' -> case cs of
-                  []         -> Nothing
-                  (c' : cs') -> if C.isLower c' then
-                                  iter ((Lambda c') : acc) cs'
-                                else Nothing
-        '.'  -> iter (Dot : acc) cs
-        ' '  -> iter (Space : acc) (trimSpaces cs)
-        '('  -> iter (LParen : acc) cs
-        ')'  -> iter (RParen : acc) cs
-        '='  -> iter (Eq : acc) cs
-        _    -> if C.isLower c then
-                  iter ((CharTok c) : acc) cs
-                else if C.isUpper c then
-                       case getName (c : cs) of
-                         (name, rest) -> iter ((Name name) : acc) rest
-                     else Nothing
+        '\x3BB' -> case cs of
+                     []         -> Nothing
+                     (c' : cs') -> if C.isLower c' then
+                                     iter ((Lambda c') : acc) cs'
+                                   else Nothing
+        '\\'    -> case cs of   -- apparently multiple patterns not allowed
+                     []         -> Nothing
+                     (c' : cs') -> if C.isLower c' then
+                                     iter ((Lambda c') : acc) cs'
+                                   else Nothing
+        '.'     -> iter (Dot : acc) cs
+        ' '     -> iter (Space : acc) (trimSpaces cs)
+        '('     -> iter (LParen : acc) cs
+        ')'     -> iter (RParen : acc) cs
+        '='     -> iter (Eq : acc) cs
+        _       -> if C.isLower c then
+                     iter ((CharTok c) : acc) cs
+                   else if C.isUpper c then
+                          case getName (c : cs) of
+                            (name, rest) -> iter ((Name name) : acc) rest
+                        else Nothing
 
