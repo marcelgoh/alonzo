@@ -10,7 +10,11 @@ data Token =
 
 data Term =
   Var Char | Abs Char Term | Ap Term Term
-  deriving Show
+
+instance Show Term where
+  show (Var x) = [x]
+  show (Abs x t) = ('\x3BB' : x : '.' : (show t))
+  show (Ap t1 t2) = ((show t1) ++ " " ++ (show t2))
 
 instance Eq Term where
   t1 == t2 = alphaEquiv t1 t2
@@ -86,10 +90,10 @@ subst m x n =
         Abs y p  -- x not free
       else
         if y `isFreeIn` n then
-          Abs y (subst p x n)
-        else
           let z = getFresh p n   -- get a fresh variable z not in FV(P) or FV(N)
           in Abs z (subst (subst p y (Var z)) x n)
+        else
+          Abs y (subst p x n)
 
 -- perform a single beta reduction step if possible, or return Nothing
 reduce1 :: Term -> Maybe Term
@@ -106,11 +110,11 @@ reduce1 term =
             Just t' -> Just (Ap t1 t')
             Nothing -> Nothing
 
--- beta reduce a term (normal-order)
+-- repeatedly beta reduce a term (normal-order)
 betaReduce :: Term -> Term
 betaReduce term =
   case reduce1 term of
-    Just t -> t
+    Just t -> betaReduce t
     Nothing -> term
 
 data Stmt =
