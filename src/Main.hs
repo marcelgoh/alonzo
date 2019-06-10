@@ -23,11 +23,13 @@ loop assocList = do
   Ctrl.when (Maybe.isNothing stmt) $ do putStrLn "Parse error."
                                         loop assocList
   case Maybe.fromJust stmt of
-    AssigStmt str term ->
-      loop $ replacePair assocList str term
+    AssigStmt str term -> do
+      let reduced = betaReduce term
+      loop $ replacePair assocList str reduced
     TermStmt term -> do
-      putStr $ show term
-      case searchValues assocList term of
+      let reduced = betaReduce term
+      putStr $ show reduced
+      case searchValues assocList reduced of
         Just str -> do
           Printf.printf " -- %s\n" str
         Nothing -> do
@@ -43,10 +45,6 @@ loop assocList = do
 -- entry point
 main :: IO ()
 main = do
-  if (Abs 'a' (Var 'a')) == (Abs 'b' (Var 'b')) then
-    putStrLn "Match."
-  else
-    putStrLn "No match."
   putStrLn "+----------------------------------------------+"
   putStrLn "|        ALONZO \x3BB-CALCULUS INTERPRETER         |"
   putStrLn "|   Author: Marcel Goh (Release: 19.05.2019)   |"

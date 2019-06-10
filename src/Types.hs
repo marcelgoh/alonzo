@@ -38,17 +38,8 @@ instance Eq Term where
                   (_, _) ->
                     Nothing  -- one bound, one free, so fail
               (Abs c1 t1', Abs c2 t2') ->
---                case (Map.lookup c1 map1, Map.lookup c2 map2) of
---                  (Just i1, Just i2) ->
---                    -- both variables already bound, if binding equal then recurse
---                    -- if i1 == i2 then walk map1 map2 n t1' t2' else Nothing
---                    -- ^ above step probably wrong, we want to shadow instead
+                    -- shadow previous name in recursive step
                     walk (Map.insert c1 n map1) (Map.insert c2 n map2) (n + 1) t1' t2'
---                  (Nothing, Nothing) ->
---                    -- bind both variables and recurse
---                    walk (Map.insert c1 n map1) (Map.insert c2 n map2) (n + 1) t1' t2'
---                  (_, _) ->
---                    Nothing  -- one bound, one free, so fail
               (Ap t11 t12, Ap t21 t22) ->
                 -- recurse down first term, and use updated maps and n-value to
                 --   recurse down second term
@@ -58,6 +49,71 @@ instance Eq Term where
                   Nothing -> Nothing
               _ -> Nothing  -- structures don't even match so fail
 
+-- gets a list of all free variables in a term
+freeVars :: Term -> [Char]
+freeVars t =
+  case t of
+    (Var x) -> [x]
+    (Abs x t') -> [ y | y <- freeVars t', y /= x]
+    (Ap t1 t2) -> freeVars t1 ++ freeVars t2
+
+-- get a variable not free in either of t1 or t2
+getFresh :: Term -> Term -> Char
+getFresh t1 t2 =
+  let free1 = freeVars t1
+      free2 = freeVars t2
+      getChar [] = error "Exhausted all variables"
+      getChar (x : xs) =
+        if x `elem` free1 || x `elem` free2 then getChar xs else x
+  in getChar "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+-- true if the variable x is free in term t
+isFreeIn :: Char -> Term -> Bool
+isFreeIn x t =
+  case t of
+    (Var y) -> y == x
+    (Abs y t') -> if y == x then False else isFreeIn x t'
+    (Ap t1 t2) -> isFreeIn x t1 || isFreeIn x t2
+
+-- performs M [x := N]
+subst :: Term -> Char -> Term -> Term
+subst m x n =
+  case m of
+    (Var y) -> if y == x then n else Var y
+    (Ap p q) -> Ap (subst p x n) (subst q x n)
+    (Abs y p) ->
+      if y == x then
+        Abs y p  -- x not free
+      else
+        if y `isFreeIn` n then
+          Abs y (subst p x n)
+        else
+          let z = getFresh p n   -- get a fresh variable z not in FV(P) or FV(N)
+          in Abs z (subst (subst p y (Var z)) x n)
+
+-- perform a single beta reduction step if possible, or return Nothing
+reduce1 :: Term -> Maybe Term
+reduce1 term =
+  case term of
+    (Var x) -> Nothing
+    (Abs y p) -> reduce1 p
+    (Ap (Abs x m) n) -> Just (subst m x n)
+    (Ap t1 t2) ->
+      case reduce1 t1 of
+        Just t' -> Just (Ap t' t2)
+        Nothing ->
+          case reduce1 t2 of
+            Just t' -> Just (Ap t1 t')
+            Nothing -> Nothing
+
+-- beta reduce a term (normal-order)
+betaReduce :: Term -> Term
+betaReduce term =
+  case reduce1 term of
+    Just t -> t
+    Nothing -> term
+
 data Stmt =
   AssigStmt String Term | TermStmt Term | NameStmt String
   deriving (Show, Eq)
+
