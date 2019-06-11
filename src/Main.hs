@@ -52,7 +52,7 @@ loop assocList = do
   SysIO.hFlush SysIO.stdout
   input <- getLine
   let tokens = tokenise input
-  putStrLn $ show tokens
+  -- putStrLn $ show tokens
   Ctrl.when (Maybe.isNothing tokens) $ do putStrLn "Invalid input."
                                           loop assocList
   let stmt = parseStmt assocList $ Maybe.fromJust tokens
@@ -61,6 +61,7 @@ loop assocList = do
   case Maybe.fromJust stmt of
     AssigStmt str term -> do
       let reduced = betaReduce term
+      Printf.printf "%s -- %s\n" (show reduced) str
       loop $ replacePair assocList str reduced
     TermStmt term -> do
       let reduced = betaReduce term

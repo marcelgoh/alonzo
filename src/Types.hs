@@ -10,12 +10,12 @@ data Token =
 
 data Term =
   Var Char | Abs Char Term | Ap Term Term
-  deriving Show
+--  deriving Show
 
---instance Show Term where
---  show (Var x) = [x]
---  show (Abs x t) = "(" ++ ('\x3BB' : x : '.' : (show t)) ++")"
---  show (Ap t1 t2) = "(" ++ (show t1) ++ " " ++ (show t2) ++ ")"
+instance Show Term where
+  show (Var x) = [x]
+  show (Abs x t) = "(" ++ ('\x3BB' : x : '.' : (show t)) ++")"
+  show (Ap t1 t2) = "(" ++ (show t1) ++ " " ++ (show t2) ++ ")"
 
 instance Eq Term where
   t1 == t2 = alphaEquiv t1 t2
