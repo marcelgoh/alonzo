@@ -1,6 +1,7 @@
 -- Front-end for the interpreter
 
 import qualified Control.Monad as Ctrl
+import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified System.IO as SysIO
 import qualified Text.Printf as Printf
@@ -15,12 +16,14 @@ startingEnv = [
   ("S", (Abs 'x' (Abs 'y' (Abs 'z' (Ap (Ap (Var 'x') (Var 'z')) (Ap (Var 'y') (Var 'z'))))))),
   ("Y", (Abs 'g' (Ap (Abs 'x' (Ap (Var 'g') (Ap (Var 'x') (Var 'x')))) (Abs 'x' (Ap (Var 'g') (Ap (Var 'x') (Var 'x'))))))),
   ("ISZERO", (Abs 'n' (Ap (Ap (Var 'n') (Abs 'x' (Abs 'p' (Abs 'q' (Var 'q'))))) (Abs 'p' (Abs 'q' (Var 'p')))))),
-  ("TRUE", (Abs 'p' (Abs 'q' (Var 'p')))),  -- doubles as K-combinator
-  ("FALSE", (Abs 'p' (Abs 'q' (Var 'q')))), -- doubles as ZERO
+  ("K", (Abs 'x' (Abs 'y' (Var 'x')))),
+  ("TRUE", (Abs 'p' (Abs 'q' (Var 'p')))),
+  ("FALSE", (Abs 'p' (Abs 'q' (Var 'q')))),
   ("AND", (Abs 'p' (Abs 'q' (Ap (Ap (Var 'p') (Var 'q')) (Var 'p'))))),
   ("OR", (Abs 'p' (Abs 'q' (Ap (Ap (Var 'p') (Var 'p')) (Var 'q'))))),
   ("NOT", (Abs 'p' (Ap (Ap (Var 'p') (Abs 'p' (Abs 'q' (Var 'q')))) (Abs 'p' (Abs 'q' (Var 'p')))))),
   ("IF", (Abs 'p' (Abs 'a' (Abs 'b' (Ap (Ap (Var 'p') (Var 'a')) (Var 'b')))))),
+  ("ZERO", (Abs 'f' (Abs 'x' (Var 'x')))),
   ("ONE", (Abs 'f' (Abs 'x' (Ap (Var 'f') (Var 'x'))))),
   ("TWO", (Abs 'f' (Abs 'x' (Ap (Var 'f') (Ap (Var 'f') (Var 'x')))))),
   ("THREE", (Abs 'f' (Abs 'x' (Ap (Var 'f') (Ap (Var 'f') (Ap (Var 'f') (Var 'x'))))))),
@@ -60,17 +63,17 @@ loop assocList = do
                                         loop assocList
   case Maybe.fromJust stmt of
     AssigStmt str term -> do
-      let reduced = betaReduce term
-      Printf.printf "%s -- %s\n" (show reduced) str
-      loop $ replacePair assocList str reduced
+      Printf.printf "%s -- %s\n" (show term) str
+      loop $ replacePair assocList str term
     TermStmt term -> do
       let reduced = betaReduce term
       putStr $ show reduced
-      case searchValues assocList reduced of
-        Just str -> do
-          Printf.printf " -- %s\n" str
-        Nothing -> do
-          Printf.printf "\n"
+      let name_list = searchValues [] assocList reduced
+      let separated = List.intercalate ", " name_list
+      if null name_list then
+        Printf.printf "\n"
+      else
+        Printf.printf " -- %s\n" separated
     NameStmt str ->
       case searchKeys assocList str of
         Just term -> do
@@ -84,7 +87,7 @@ main :: IO ()
 main = do
   putStrLn "+----------------------------------------------+"
   putStrLn "|        ALONZO \x3BB-CALCULUS INTERPRETER         |"
-  putStrLn "|   Author: Marcel Goh (Release: 11.06.2019)   |"
+  putStrLn "|   Author: Marcel Goh (Release: 14.06.2019)   |"
   putStrLn "|            Type \"Ctrl-C\" to quit.            |"
   putStrLn "+----------------------------------------------+"
   loop startingEnv
