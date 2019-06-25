@@ -4,6 +4,7 @@ module Types where
 
 import qualified Data.Map as Map
 import qualified Data.List as List
+import qualified Control.Exception as Exc
 
 data Token =
   Lambda Char | CharTok Char | Dot | Space | LParen | RParen | Eq | Name String
@@ -74,34 +75,42 @@ subst m x n =
         else
           Abs y (subst p x n)
 
+data ReturnValue = Some Term | None | MaxDepthReached
+
 -- perform a single beta reduction step if possible, or return Nothing
 -- if maxDepth reached, return Nothing (catches terms with no normal form)
-reduce1 :: Int -> Term -> Maybe Term
+reduce1 :: Int -> Term -> ReturnValue
 reduce1 depth term =
-  if depth > 300 then
-    Nothing
+  if depth > 1000 then
+    MaxDepthReached
   else
     case term of
-      (Var x) -> Nothing
+      (Var x) -> None
       (Abs y p) ->
         case reduce1 (depth + 1) p of
-          Just p' -> Just (Abs y p')
-          Nothing -> Nothing
-      (Ap (Abs x m) n) -> Just (subst m x n)
+          Some p' -> Some (Abs y p')
+          MaxDepthReached -> MaxDepthReached
+          None -> None
+      (Ap (Abs x m) n) -> Some (subst m x n)
       (Ap t1 t2) ->
         case reduce1 (depth + 1) t1 of
-          Just t' -> Just (Ap t' t2)
-          Nothing ->
+          Some t' -> Some (Ap t' t2)
+          MaxDepthReached -> MaxDepthReached
+          None ->
             case reduce1 (depth + 1) t2 of
-              Just t' -> Just (Ap t1 t')
-              Nothing -> Nothing
+              Some t' -> Some (Ap t1 t')
+              MaxDepthReached -> MaxDepthReached
+              None -> None
 
 -- repeatedly beta reduce a term (normal-order)
 betaReduce :: Term -> Term
 betaReduce term =
-  case reduce1 0 term of
-    Just t -> betaReduce t
-    Nothing -> term
+  let loop term' =
+        case reduce1 0 term' of
+          Some t -> loop t
+          None -> term'
+          MaxDepthReached -> term    -- abort if max depth reached
+  in loop term
 
 data Stmt =
   AssigStmt String Term | TermStmt Term | NameStmt String

@@ -63,7 +63,8 @@ loop assocList = do
                                         loop assocList
   case Maybe.fromJust stmt of
     AssigStmt str term -> do
-      Printf.printf "%s -- %s\n" (show term) str
+      let reduced = betaReduce term
+      Printf.printf "%s -- %s\n" (show reduced) str
       loop $ replacePair assocList str term
     TermStmt term -> do
       let reduced = betaReduce term
@@ -87,7 +88,7 @@ main :: IO ()
 main = do
   putStrLn "+----------------------------------------------+"
   putStrLn "|        ALONZO \x3BB-CALCULUS INTERPRETER         |"
-  putStrLn "|   Author: Marcel Goh (Release: 14.06.2019)   |"
+  putStrLn "|   Author: Marcel Goh (Release: 25.VI.2019)   |"
   putStrLn "|            Type \"Ctrl-C\" to quit.            |"
   putStrLn "+----------------------------------------------+"
   loop startingEnv

@@ -16,7 +16,7 @@ When Alonzo is first run, a prompt will appear:
 ```
 +----------------------------------------------+
 |        ALONZO λ-CALCULUS INTERPRETER         |
-|   Author: Marcel Goh (Release: 11.06.2019)   |
+|   Author: Marcel Goh (Release: 25.VI.2019)   |
 |            Type "Ctrl-C" to quit.            |
 +----------------------------------------------+
 ]=>
@@ -44,15 +44,17 @@ In the first two cases, Alonzo will attempt to evaluate terms by repeatedly perf
 Alonzo will remember terms that have been given names using the `=` operator. A name can only hold one term at a time, so a previous term will be replaced if a name is assigned to twice. Upon startup, Alonzo has the following names in its environment:
 
 ```
-I -- λx.x
 S -- λx.λy.λz.x z (y z)
+K -- λx.λy.x
+I -- λx.x
 Y -- λg.(λx.g (x x)) (λx.g (x x))   [fixed-point combinator]
-TRUE -- λp.λq.p                     [also the K-combinator]
-FALSE -- λp.λq.q                    [also the number ZERO]
+TRUE -- λp.λq.p
+FALSE -- λp.λq.q
 AND -- λp.λq.p q p
 OR -- λp.λq.p p q
 NOT -- λp.p FALSE TRUE
 IF -- λp.λa.λb.p a b
+ZERO -- λf.λx.x
 ONE -- λf.λx.f x
 [...]
 TEN -- λf.λx.f (f (f (f (f (f (f (f (f (f x)))))))))
@@ -66,10 +68,10 @@ CONS -- λx.λy.λf.f x y
 CAR -- λp.p TRUE
 CDR -- λp.p FALSE
 SUMREC -- \r.\n.IF (ISZERO n) FALSE (PLUS n (r (PRED n)))
-FACTREC = \r.\n.IF (ISZERO n) ONE (TIMES n (r (PRED n)))
+FACTREC -- \r.\n.IF (ISZERO n) ONE (TIMES n (r (PRED n)))
 ```
 
-Calling `Y SUMREC n` computes the partial sum up to `n` and calling `Y FACTREC n` calculates the factorial of `n`. The user should take care not to reassign these names, as Alonzo will replace the stored terms without warning.
+Calling `Y SUMREC n` computes the partial sum up to `n` and calling `Y FACTREC n` calculates the factorial of `n`. The user should avoid reassigning these names.
 
 ## Authors
 
